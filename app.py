@@ -109,11 +109,11 @@ def bang_02(b01):
 # ======================================================
 # BẢNG 03 – TOP ĐƠN VỊ TỒN CUỐI KỲ
 # ======================================================
-def bang_03(df, DONVI, BH, KP, TD, dates, top_n=10):
+def bang_03(df, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, dates, top_n=10):
     s, e = dates["report_start_date"], dates["report_end_date"]
     ton = df[valid_ton(df, BH, KP, TD, s, e)]
     return (
-        ton.groupby(DONVI)
+        ton.groupby(Đơn vị thực hiện KPCS trong quý)
         .size()
         .sort_values(ascending=False)
         .head(top_n)
@@ -141,13 +141,13 @@ def bang_04(df, BH, KP, TD, HAN, dates):
 # ======================================================
 # BẢNG 05 – TOP QUÁ HẠN
 # ======================================================
-def bang_05(df, DONVI, BH, KP, TD, HAN, dates, top_n=10):
+def bang_05(df, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, HAN, dates, top_n=10):
     s, e = dates["report_start_date"], dates["report_end_date"]
     ton = df[valid_ton(df, BH, KP, TD, s, e)].copy()
     ton[HAN] = pd.to_datetime(ton[HAN], errors="coerce")
     ton = ton[ton[HAN] < e]
     return (
-        ton.groupby(DONVI)
+        ton.groupby(Đơn vị thực hiện KPCS trong quý)
         .size()
         .sort_values(ascending=False)
         .head(top_n)
@@ -158,19 +158,19 @@ def bang_05(df, DONVI, BH, KP, TD, HAN, dates, top_n=10):
 # ======================================================
 # BẢNG 06 – THEO KHỐI / KHU VỰC
 # ======================================================
-def bang_06(df, KHOI, KV, BH, KP, TD, dates):
+def bang_06(df, SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV, BH, KP, TD, dates):
     s, e = dates["report_start_date"], dates["report_end_date"]
     ton = df[valid_ton(df, BH, KP, TD, s, e)]
-    return ton.groupby([KHOI, KV]).size().to_frame("Tồn")
+    return ton.groupby([SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV]).size().to_frame("Tồn")
 
 
 # ======================================================
 # BẢNG 07 – CHI TIẾT ĐƠN VỊ
 # ======================================================
-def bang_07(df, KHOI, KV, DONVI, BH, KP, TD, dates):
+def bang_07(df, SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, dates):
     s, e = dates["report_start_date"], dates["report_end_date"]
     ton = df[valid_ton(df, BH, KP, TD, s, e)]
-    return ton.groupby([KHOI, KV, DONVI]).size().to_frame("Tồn")
+    return ton.groupby([SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV, Đơn vị thực hiện KPCS trong quý]).size().to_frame("Tồn")
 
 
 # ======================================================
@@ -189,8 +189,8 @@ if file:
     KP = find_column(df, ["NGÀY HOÀN TẤT KPCS (mm/dd/yyyy)", "Ngày hoàn tất"])
     TD = find_column(df, ["NGÀY CHUYỂN THEO DÕI RIÊNG (mm/dd/yyyy)"])
     HAN = find_column(df, ["Thời hạn hoàn thành (mm/dd/yyyy)", "Hạn KPCS"])
-    DONVI = find_column(df, ["Đơn vị"])
-    KHOI = find_column(df, ["Khối"])
+    Đơn vị thực hiện KPCS trong quý = find_column(df, ["Đơn vị"])
+    SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS) = find_column(df, ["Khối"])
     KV = find_column(df, ["Khu vực"])
 
     must_have({
@@ -198,7 +198,7 @@ if file:
         "Ngày hoàn tất": KP,
         "Theo dõi riêng": TD,
         "Hạn": HAN,
-        "Đơn vị": DONVI,
+        "Đơn vị": Đơn vị thực hiện KPCS trong quý,
     })
 
     dates = {
@@ -211,11 +211,11 @@ if file:
 
     b01 = bang_01(df, ["NHÓM"], BH, KP, TD, HAN, dates)
     b02 = bang_02(b01)
-    b03 = bang_03(df, DONVI, BH, KP, TD, dates)
+    b03 = bang_03(df, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, dates)
     b04 = bang_04(df, BH, KP, TD, HAN, dates)
-    b05 = bang_05(df, DONVI, BH, KP, TD, HAN, dates)
-    b06 = bang_06(df, KHOI, KV, BH, KP, TD, dates) if KHOI and KV else None
-    b07 = bang_07(df, KHOI, KV, DONVI, BH, KP, TD, dates) if KHOI and KV else None
+    b05 = bang_05(df, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, HAN, dates)
+    b06 = bang_06(df, SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV, BH, KP, TD, dates) if SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS) and KV else None
+    b07 = bang_07(df, SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS), KV, Đơn vị thực hiện KPCS trong quý, BH, KP, TD, dates) if SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS) and KV else None
 
     for name, table in {
         "BẢNG 01": b01,
