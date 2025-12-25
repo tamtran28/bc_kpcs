@@ -7,8 +7,8 @@ from io import BytesIO
 # ======================================================
 # CONFIG
 # ======================================================
-st.set_page_config(page_title="BC KPCS – Python = VBA", layout="wide")
-st.title("📊 BÁO CÁO KPCS – LOGIC CHUẨN VBA (STABLE)")
+st.set_page_config(page_title="BC KPCS – ĐỦ 7 BẢNG (Chuẩn VBA)", layout="wide")
+st.title("📊 BÁO CÁO KPCS – ĐẦY ĐỦ BẢNG 01 → 07")
 
 # ======================================================
 # HELPER
@@ -27,9 +27,6 @@ def must_have(mapping):
             st.stop()
 
 
-# ======================================================
-# LOAD DATA
-# ======================================================
 @st.cache_data
 def load_excel(file):
     df = pd.read_excel(file)
@@ -40,116 +37,140 @@ def load_excel(file):
 
 
 # ======================================================
-# CORE LOGIC – CHUẨN VBA
+# CORE LOGIC – VBA
 # ======================================================
 def valid_ton(df, BH, KP, TD, start, end):
     return (
         (df[BH] <= end)
         &
-        (
-            df[KP].isna() |
-            (df[KP] > end)
-        )
+        (df[KP].isna() | (df[KP] > end))
         &
         (
-            df[TD].isna() |
-            (
-                (df[TD] >= start) &
-                (df[TD] <= end)
-            )
+            df[TD].isna()
+            | ((df[TD] >= start) & (df[TD] <= end))
         )
     )
 
 
-def calculate_summary_metrics_vba(df, group_cols, BH, KP, TD, HAN, dates):
-    y0 = dates["year_start_date"]
-    s = dates["report_start_date"]
-    e = dates["report_end_date"]
+def cnt_df(dfx, group_cols):
+    if dfx.empty:
+        return pd.Series(dtype=int)
+    return dfx.groupby(group_cols).size()
 
-    for col in [BH, KP, TD, HAN]:
-        df[col] = pd.to_datetime(df[col], errors="coerce")
 
-    def cnt_from_df(dfx):
-        if dfx.empty:
-            return pd.Series(dtype=int)
-        if group_cols:
-            return dfx.groupby(group_cols).size()
-        return pd.Series({"TỔNG": len(dfx)})
+# ======================================================
+# BẢNG 01 – TỔNG HỢP
+# ======================================================
+def bang_01(df, group_cols, BH, KP, TD, HAN, dates):
+    y0, s, e = dates.values()
 
-    # ===== TỒN / PHÁT SINH / KHẮC PHỤC =====
-    ton_dau_nam_df = df[
-        (df[BH] < y0) &
-        (
-            df[KP].isna() |
-            (df[KP] >= y0)
-        )
-    ]
+    ton_dau_nam = df[(df[BH] < y0) & (df[KP].isna() | (df[KP] >= y0))]
+    phat_sinh_nam = df[(df[BH] >= y0) & (df[BH] <= e)]
+    khac_phuc_nam = df[(df[KP].notna()) & (df[KP] >= y0) & (df[KP] <= e)]
 
-    phat_sinh_nam_df = df[
-        (df[BH] >= y0) & (df[BH] <= e)
-    ]
+    ton_dau_ky = df[(df[BH] < s) & (df[KP].isna() | (df[KP] >= s))]
+    phat_sinh_ky = df[(df[BH] >= s) & (df[BH] <= e)]
+    khac_phuc_ky = df[(df[KP].notna()) & (df[KP] >= s) & (df[KP] <= e)]
 
-    khac_phuc_nam_df = df[
-        (df[KP].notna()) &
-        (df[KP] >= y0) &
-        (df[KP] <= e)
-    ]
-
-    ton_dau_ky_df = df[
-        (df[BH] < s) &
-        (
-            df[KP].isna() |
-            (df[KP] >= s)
-        )
-    ]
-
-    phat_sinh_ky_df = df[
-        (df[BH] >= s) & (df[BH] <= e)
-    ]
-
-    khac_phuc_ky_df = df[
-        (df[KP].notna()) &
-        (df[KP] >= s) &
-        (df[KP] <= e)
-    ]
-
-    # ===== TỒN CUỐI KỲ (THEO VBA) =====
-    ton_cuoi_ky = (
-        cnt_from_df(ton_dau_ky_df)
-        + cnt_from_df(phat_sinh_ky_df)
-        - cnt_from_df(khac_phuc_ky_df)
+    ton_ck = (
+        cnt_df(ton_dau_ky, group_cols)
+        + cnt_df(phat_sinh_ky, group_cols)
+        - cnt_df(khac_phuc_ky, group_cols)
     )
 
-    # ===== QUÁ HẠN =====
-    ton_df = df.loc[valid_ton(df, BH, KP, TD, s, e)].copy()
+    ton_df = df[valid_ton(df, BH, KP, TD, s, e)].copy()
     ton_df[HAN] = pd.to_datetime(ton_df[HAN], errors="coerce")
 
-    qua_han_df = ton_df[
-        ton_df[HAN].notna() &
-        (ton_df[HAN] < e)
-    ]
-
-    qua_han_1n_df = ton_df[
-        ton_df[HAN].notna() &
-        (ton_df[HAN] < (e - pd.DateOffset(years=1)))
-    ]
+    qua_han = ton_df[ton_df[HAN] < e]
+    qua_han_1n = ton_df[ton_df[HAN] < (e - pd.DateOffset(years=1))]
 
     out = pd.DataFrame({
-        "Tồn đầu năm": cnt_from_df(ton_dau_nam_df),
-        "Phát sinh năm": cnt_from_df(phat_sinh_nam_df),
-        "Khắc phục năm": cnt_from_df(khac_phuc_nam_df),
-        "Tồn đầu kỳ": cnt_from_df(ton_dau_ky_df),
-        "Phát sinh kỳ": cnt_from_df(phat_sinh_ky_df),
-        "Khắc phục kỳ": cnt_from_df(khac_phuc_ky_df),
-        "Tồn cuối kỳ": ton_cuoi_ky,
-        "Quá hạn": cnt_from_df(qua_han_df),
-        "Quá hạn >1 năm": cnt_from_df(qua_han_1n_df)
+        "Tồn đầu năm": cnt_df(ton_dau_nam, group_cols),
+        "Phát sinh năm": cnt_df(phat_sinh_nam, group_cols),
+        "Khắc phục năm": cnt_df(khac_phuc_nam, group_cols),
+        "Tồn đầu kỳ": cnt_df(ton_dau_ky, group_cols),
+        "Phát sinh kỳ": cnt_df(phat_sinh_ky, group_cols),
+        "Khắc phục kỳ": cnt_df(khac_phuc_ky, group_cols),
+        "Tồn cuối kỳ": ton_ck,
+        "Quá hạn": cnt_df(qua_han, group_cols),
+        "Quá hạn >1 năm": cnt_df(qua_han_1n, group_cols),
     }).fillna(0).astype(int)
 
-    denom = out["Tồn đầu năm"] + out["Phát sinh năm"]
-    out["Tỷ lệ chưa KP"] = np.where(denom > 0, out["Tồn cuối kỳ"] / denom, 0)
+    return out
 
-    return out.reset_index().rename(columns={"index": "Nhóm"})
+
+# ======================================================
+# BẢNG 02 – TỔNG HỢP (LOẠI DÒNG = 0)
+# ======================================================
+def bang_02(b01):
+    return b01.loc[(b01 != 0).any(axis=1)]
+
+
+# ======================================================
+# BẢNG 03 – TOP ĐƠN VỊ TỒN CUỐI KỲ
+# ======================================================
+def bang_03(df, DONVI, BH, KP, TD, dates, top_n=10):
+    s, e = dates["report_start_date"], dates["report_end_date"]
+    ton = df[valid_ton(df, BH, KP, TD, s, e)]
+    return (
+        ton.groupby(DONVI)
+        .size()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .to_frame("Tồn cuối kỳ")
+    )
+
+
+# ======================================================
+# BẢNG 04 – PHÂN NHÓM THỜI GIAN QUÁ HẠN
+# ======================================================
+def bang_04(df, BH, KP, TD, HAN, dates):
+    s, e = dates["report_start_date"], dates["report_end_date"]
+    ton = df[valid_ton(df, BH, KP, TD, s, e)].copy()
+    ton[HAN] = pd.to_datetime(ton[HAN], errors="coerce")
+    ton = ton[ton[HAN].notna()]
+    ton["Số ngày quá hạn"] = (e - ton[HAN]).dt.days
+
+    bins = [-1, 90, 180, 270, 365, 10**9]
+    labels = ["<3 tháng", "3–6", "6–9", "9–12", ">1 năm"]
+
+    ton["Nhóm"] = pd.cut(ton["Số ngày quá hạn"], bins=bins, labels=labels)
+    return ton.groupby("Nhóm").size().to_frame("Số lượng")
+
+
+# ======================================================
+# BẢNG 05 – TOP QUÁ HẠN
+# ======================================================
+def bang_05(df, DONVI, BH, KP, TD, HAN, dates, top_n=10):
+    s, e = dates["report_start_date"], dates["report_end_date"]
+    ton = df[valid_ton(df, BH, KP, TD, s, e)].copy()
+    ton[HAN] = pd.to_datetime(ton[HAN], errors="coerce")
+    ton = ton[ton[HAN] < e]
+    return (
+        ton.groupby(DONVI)
+        .size()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .to_frame("Quá hạn")
+    )
+
+
+# ======================================================
+# BẢNG 06 – THEO KHỐI / KHU VỰC
+# ======================================================
+def bang_06(df, KHOI, KV, BH, KP, TD, dates):
+    s, e = dates["report_start_date"], dates["report_end_date"]
+    ton = df[valid_ton(df, BH, KP, TD, s, e)]
+    return ton.groupby([KHOI, KV]).size().to_frame("Tồn")
+
+
+# ======================================================
+# BẢNG 07 – CHI TIẾT ĐƠN VỊ
+# ======================================================
+def bang_07(df, KHOI, KV, DONVI, BH, KP, TD, dates):
+    s, e = dates["report_start_date"], dates["report_end_date"]
+    ton = df[valid_ton(df, BH, KP, TD, s, e)]
+    return ton.groupby([KHOI, KV, DONVI]).size().to_frame("Tồn")
 
 
 # ======================================================
@@ -168,15 +189,17 @@ if file:
     KP = find_column(df, ["NGÀY HOÀN TẤT KPCS (mm/dd/yyyy)", "Ngày hoàn tất"])
     TD = find_column(df, ["NGÀY CHUYỂN THEO DÕI RIÊNG (mm/dd/yyyy)"])
     HAN = find_column(df, ["Thời hạn hoàn thành (mm/dd/yyyy)", "Hạn KPCS"])
+    DONVI = find_column(df, ["Đơn vị"])
+    KHOI = find_column(df, ["Khối"])
+    KV = find_column(df, ["Khu vực"])
 
     must_have({
         "Ngày ban hành": BH,
         "Ngày hoàn tất": KP,
-        "Ngày chuyển TD riêng": TD,
-        "Hạn KPCS": HAN
+        "Theo dõi riêng": TD,
+        "Hạn": HAN,
+        "Đơn vị": DONVI,
     })
-
-    df["NHÓM"] = "TỔNG"
 
     dates = {
         "year_start_date": pd.to_datetime(f"{end.year}-01-01"),
@@ -184,25 +207,47 @@ if file:
         "report_end_date": pd.to_datetime(end),
     }
 
-    st.subheader("📊 BẢNG 01 – TỔNG HỢP")
-    bang01 = calculate_summary_metrics_vba(
-        df,
-        ["NHÓM"],
-        BH, KP, TD, HAN,
-        dates
-    )
-    st.dataframe(bang01, use_container_width=True)
+    df["NHÓM"] = "TỔNG"
+
+    b01 = bang_01(df, ["NHÓM"], BH, KP, TD, HAN, dates)
+    b02 = bang_02(b01)
+    b03 = bang_03(df, DONVI, BH, KP, TD, dates)
+    b04 = bang_04(df, BH, KP, TD, HAN, dates)
+    b05 = bang_05(df, DONVI, BH, KP, TD, HAN, dates)
+    b06 = bang_06(df, KHOI, KV, BH, KP, TD, dates) if KHOI and KV else None
+    b07 = bang_07(df, KHOI, KV, DONVI, BH, KP, TD, dates) if KHOI and KV else None
+
+    for name, table in {
+        "BẢNG 01": b01,
+        "BẢNG 02": b02,
+        "BẢNG 03": b03,
+        "BẢNG 04": b04,
+        "BẢNG 05": b05,
+        "BẢNG 06": b06,
+        "BẢNG 07": b07,
+    }.items():
+        if table is not None:
+            st.subheader(name)
+            st.dataframe(table, use_container_width=True)
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        bang01.to_excel(writer, sheet_name="BANG_01", index=False)
+        b01.to_excel(writer, sheet_name="BANG_01")
+        b02.to_excel(writer, sheet_name="BANG_02")
+        b03.to_excel(writer, sheet_name="BANG_03")
+        b04.to_excel(writer, sheet_name="BANG_04")
+        b05.to_excel(writer, sheet_name="BANG_05")
+        if b06 is not None:
+            b06.to_excel(writer, sheet_name="BANG_06")
+        if b07 is not None:
+            b07.to_excel(writer, sheet_name="BANG_07")
 
     st.download_button(
-        "📥 Tải Excel BẢNG 01",
+        "📥 Tải Excel ĐẦY ĐỦ 7 BẢNG",
         data=output.getvalue(),
-        file_name="BC_KPCS_BANG_01_PYTHON.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        file_name="BC_KPCS_7_BANG_PYTHON.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 else:
-    st.info("⬅️ Upload file Excel KPCS")
+    st.info("⬅️ Upload file Excel để bắt đầu")
