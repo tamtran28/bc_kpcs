@@ -102,7 +102,7 @@ def bang_01(df, group_cols, BH, KP, TD, HAN, dates):
 # ======================================================
 # BẢNG 02 – TỔNG HỢP (LOẠI DÒNG = 0)
 # ======================================================
-def bang_02(b01):
+def bang_02(df, KHOI, BH, KP, TD, HAN, dates):
     return b01.loc[(b01 != 0).any(axis=1)]
 
 
