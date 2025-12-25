@@ -210,7 +210,7 @@ if file:
     df["NHÓM"] = "TỔNG"
 
     b01 = bang_01(df, ["NHÓM"], BH, KP, TD, HAN, dates)
-    b02 = bang_02(b01)
+    b02 = bang_02(df, KHOI, BH, KP, TD, HAN, dates)
     b03 = bang_03(df, DONVI, BH, KP, TD, dates)
     b04 = bang_04(df, BH, KP, TD, HAN, dates)
     b05 = bang_05(df, DONVI, BH, KP, TD, HAN, dates)
