@@ -177,7 +177,7 @@ if file:
     HAN = find_column(df, ["Thời hạn hoàn thành (mm/dd/yyyy)"])
     DONVI = find_column(df, ["Đơn vị thực hiện KPCS trong quý"])
     KHOI = find_column(df, ["SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS)"])
-    KV = find_column(df, ["Khối, Khu vực, AMC"])
+    KV = find_column(df, ["ĐVKD, AMC, Hội sở (Nhập ĐVKD hoặc Hội sở hoặc AMC)"])
 
     df["KV"] = df[KV]
 
