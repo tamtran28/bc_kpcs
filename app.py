@@ -7,8 +7,8 @@ from io import BytesIO
 # ======================================================
 # CONFIG
 # ======================================================
-st.set_page_config(page_title="BC KPCS – FULL 01→07 (VBA)", layout="wide")
-st.title("📊 BÁO CÁO KPCS – ĐẦY ĐỦ 7 BẢNG (CHUẨN VBA)")
+st.set_page_config(page_title="BC KPCS – FULL 01→07)", layout="wide")
+st.title("📊 BÁO CÁO KPCS – ĐẦY ĐỦ 7 BẢNG")
 
 # ======================================================
 # HELPERS
