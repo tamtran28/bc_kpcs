@@ -172,11 +172,11 @@ with st.sidebar:
 if file:
     df = load_excel(file)
 
-    BH = find_column(df, ["Ngày ban hành"])
-    KP = find_column(df, ["Ngày hoàn tất"])
-    HAN = find_column(df, ["Hạn KPCS"])
+    BH = find_column(df, ["Ngày, tháng, năm ban hành (mm/dd/yyyy)"])
+    KP = find_column(df, ["NGÀY HOÀN TẤT KPCS (mm/dd/yyyy)"])
+    HAN = find_column(df, ["Thời hạn hoàn thành (mm/dd/yyyy)"])
     DONVI = find_column(df, ["Đơn vị thực hiện KPCS trong quý"])
-    KHOI = find_column(df, ["Khối"])
+    KHOI = find_column(df, ["SUM (THEO Khối, KV, ĐVKD, Hội sở, Ban Dự Án QLTS)"])
     KV = find_column(df, ["Khối, Khu vực, AMC"])
 
     df["KV"] = df[KV]
